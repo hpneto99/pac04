@@ -1,8 +1,10 @@
 {
-  "build": {
-    "builder": "static",
-    "static": {
-      "publicDir": "public"
+  "services": [
+    {
+      "name": "web",
+      "static": {
+        "publicPath": "public"
+      }
     }
-  }
+  ]
 }
