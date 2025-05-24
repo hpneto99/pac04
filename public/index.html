@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pac-Cash</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: sans-serif;
+    }
+    #gameContainer {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: black;
+    }
+    #joystick {
+      position: absolute;
+      bottom: 5vh;
+      left: 50%;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: 60px 60px 60px;
+      grid-template-rows: 60px 60px 60px;
+      gap: 5px;
+      z-index: 10;
+    }
+    .joy-btn {
+      width: 60px;
+      height: 60px;
+      background: #f00;
+      border-radius: 50%;
+      opacity: 0.8;
+    }
+    .joy-btn.center {
+      background: #900;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <div id="joystick">
+      <div></div>
+      <div class="joy-btn" id="up"></div>
+      <div></div>
+      <div class="joy-btn" id="left"></div>
+      <div class="joy-btn center"></div>
+      <div class="joy-btn" id="right"></div>
+      <div></div>
+      <div class="joy-btn" id="down"></div>
+      <div></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+  <script>
+    let player;
+    const config = {
+      type: Phaser.AUTO,
+      width: window.innerWidth,
+      height: window.innerHeight,
+      parent: 'gameContainer',
+      physics: {
+        default: 'arcade',
+        arcade: {
+          debug: false
+        }
+      },
+      scene: {
+        preload,
+        create,
+        update
+      }
+    };
+
+    const game = new Phaser.Game(config);
+
+    function preload() {
+      this.load.spritesheet('sprites', 'assets/spritesheet.png', {
+        frameWidth: 16,
+        frameHeight: 16
+      });
+    }
+
+    function create() {
+      const scale = 3;
+      player = this.physics.add.sprite(100, 100, 'sprites', 0).setScale(scale);
+      this.anims.create({
+        key: 'right',
+        frames: this.anims.generateFrameNumbers('sprites', { start: 0, end: 2 }),
+        frameRate: 10,
+        repeat: -1
+      });
+      this.anims.create({
+        key: 'left',
+        frames: this.anims.generateFrameNumbers('sprites', { start: 3, end: 5 }),
+        frameRate: 10,
+        repeat: -1
+      });
+
+      player.play('right');
+
+      document.getElementById('up').ontouchstart = () => player.setVelocity(0, -150);
+      document.getElementById('down').ontouchstart = () => player.setVelocity(0, 150);
+      document.getElementById('left').ontouchstart = () => {
+        player.setVelocity(-150, 0);
+        player.play('left', true);
+      };
+      document.getElementById('right').ontouchstart = () => {
+        player.setVelocity(150, 0);
+        player.play('right', true);
+      };
+
+      ['up', 'down', 'left', 'right'].forEach(id => {
+        document.getElementById(id).ontouchend = () => player.setVelocity(0, 0);
+      });
+    }
+
+    function update() {}
+  </script>
+</body>
+</html>
