@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Pac-Cash</title>
+  <title>Pac-Cash Tilemap</title>
   <style>
     html, body {
       margin: 0;
@@ -13,18 +13,17 @@
       background: black;
     }
     #gameContainer {
-      position: fixed;
-      top: 0;
-      left: 0;
       width: 100vw;
       height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }
-    canvas {
-      display: block;
-      background: black;
+    #hud {
+      position: absolute;
+      top: 10px;
+      left: 20px;
+      color: white;
+      font-family: sans-serif;
+      font-size: 18px;
+      z-index: 10;
     }
     #joystick {
       position: absolute;
@@ -51,6 +50,7 @@
 </head>
 <body>
   <div id="gameContainer">
+    <div id="hud">PLAYER 1<br>SCORE: <span id="score">0</span></div>
     <div id="joystick">
       <div></div>
       <div class="joy-btn" id="up"></div>
@@ -66,66 +66,93 @@
 
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
   <script>
-    let player;
+    let player, score = 0, scoreText;
+    const tileSize = 32;
+    const mapData = [
+      "############################",
+      "#............##............#",
+      "#.####.#####.##.#####.####.#",
+      "#o####.#####.##.#####.####o#",
+      "#.####.#####.##.#####.####.#",
+      "#..........................#",
+      "#.####.##.########.##.####.#",
+      "#......##....##....##......#",
+      "######.##### ## #####.######",
+      "     #.##### ## #####.#     ",
+      "     #.##          ##.#     ",
+      "     #.## ######## ##.#     ",
+      "######.## ######## ##.######",
+      "      .   ###GG###   .      ",
+      "######.## ######## ##.######",
+      "     #.## ######## ##.#     ",
+      "     #.##          ##.#     ",
+      "     #.## ######## ##.#     ",
+      "######.## ######## ##.######",
+      "#............##............#",
+      "#.####.#####.##.#####.####.#",
+      "#o..##................##..o#",
+      "###.##.##.########.##.##.###",
+      "#......##....##....##......#",
+      "#.##########.##.##########.#",
+      "#..........................#",
+      "############################"
+    ];
+
     const config = {
       type: Phaser.AUTO,
-      width: document.documentElement.clientWidth,
-      height: document.documentElement.clientHeight,
+      width: mapData[0].length * tileSize,
+      height: mapData.length * tileSize,
       parent: 'gameContainer',
       physics: {
         default: 'arcade',
-        arcade: {
-          debug: false
-        }
+        arcade: { debug: false }
       },
-      scene: {
-        preload,
-        create,
-        update
-      }
+      scene: { preload, create, update }
     };
 
     const game = new Phaser.Game(config);
 
     function preload() {
-      this.load.spritesheet('sprites', 'assets/spritesheet.png', {
-        frameWidth: 16,
-        frameHeight: 16
-      });
+      this.load.image('wall', 'https://i.imgur.com/1C3qSPq.png');
+      this.load.image('dot', 'https://i.imgur.com/xaJvKOy.png');
+      this.load.image('player', 'https://i.imgur.com/RIzPj9N.png');
     }
 
     function create() {
-      const scale = 3;
-      player = this.physics.add.sprite(100, 100, 'sprites', 0).setScale(scale);
-      this.anims.create({
-        key: 'right',
-        frames: this.anims.generateFrameNumbers('sprites', { start: 0, end: 2 }),
-        frameRate: 10,
-        repeat: -1
-      });
-      this.anims.create({
-        key: 'left',
-        frames: this.anims.generateFrameNumbers('sprites', { start: 3, end: 5 }),
-        frameRate: 10,
-        repeat: -1
+      this.walls = this.physics.add.staticGroup();
+      this.dots = this.physics.add.group();
+
+      mapData.forEach((row, y) => {
+        row.split('').forEach((tile, x) => {
+          const posX = x * tileSize;
+          const posY = y * tileSize;
+          if (tile === '#') this.walls.create(posX + tileSize/2, posY + tileSize/2, 'wall');
+          if (tile === '.' || tile === 'o') {
+            const dot = this.dots.create(posX + tileSize/2, posY + tileSize/2, 'dot');
+            dot.setScale(tile === 'o' ? 1.5 : 1);
+          }
+        });
       });
 
-      player.play('right');
+      player = this.physics.add.sprite(tileSize * 13.5, tileSize * 23, 'player').setScale(1.5);
+      player.setCollideWorldBounds(true);
+      this.physics.add.collider(player, this.walls);
+      this.physics.add.overlap(player, this.dots, collectDot, null, this);
+      scoreText = document.getElementById("score");
 
       document.getElementById('up').ontouchstart = () => player.setVelocity(0, -150);
       document.getElementById('down').ontouchstart = () => player.setVelocity(0, 150);
-      document.getElementById('left').ontouchstart = () => {
-        player.setVelocity(-150, 0);
-        player.play('left', true);
-      };
-      document.getElementById('right').ontouchstart = () => {
-        player.setVelocity(150, 0);
-        player.play('right', true);
-      };
-
-      ['up', 'down', 'left', 'right'].forEach(id => {
+      document.getElementById('left').ontouchstart = () => player.setVelocity(-150, 0);
+      document.getElementById('right').ontouchstart = () => player.setVelocity(150, 0);
+      ['up','down','left','right'].forEach(id => {
         document.getElementById(id).ontouchend = () => player.setVelocity(0, 0);
       });
+    }
+
+    function collectDot(player, dot) {
+      dot.destroy();
+      score += 10;
+      scoreText.textContent = score;
     }
 
     function update() {}
